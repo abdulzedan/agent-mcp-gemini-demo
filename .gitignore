@@ -1,0 +1,37 @@
+# General
+.DS_Store
+*.pem
+*.key
+.env
+.env.*
+!/.env.example
+.venv/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/build/
+frontend/.DS_Store
+
+# Python
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/.pytest_cache/
+backend/.coverage
+backend/.venv/
+backend/build/
+backend/dist/
+backend/*.egg-info/
+backend/htmlcov/
+backend/.env

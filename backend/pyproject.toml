@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastapi_build"
+version = "0.1.0"
+description = "FastAPI backend for Code Agent Gemini - YouTube Summarizer and Fact-Checker"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT License"}
+
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn=0.34.2",
+    "pydantic>=2.11.4",
+    "python-dotenv>=1.1.0",
+    "google-cloud-aiplatform[adk]>=1.40.0", # ADK and its dependencies,
+    "google-adk",
+    "youtube-transcript-api>=1.0.3",
+    "mcp>=1.7.0", # Model Context Protocol server library
+    "httpx>=0.28.1", # For async HTTP requests if needed by agents/tools
+]
+
+
+[tool.setuptools.packages.find]
+where = ["."] # Searches in the current directory (backend/)
+include = ["fastapi_build*"]  # Include the `fastapi_build` directory as a package
+exclude = ["tests*"]
+
+# Ruff and Black are configured in the root pyproject.toml
+# If you had specific backend-only linting/formatting, it could go here.

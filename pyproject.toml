@@ -1,0 +1,63 @@
+# code-agent-gemini/pyproject.toml
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+select = ["E", "F", "I", "UP", "A"]
+ignore = [
+    "D203", # One blank line required before class docstring
+    "D213", # Multi-line docstring summary should start at the second line
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "D107", # Missing docstring in __init__
+]
+extend-exclude = [
+    ".venv",
+    "frontend/node_modules" # For when frontend is added
+]
+
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"] # Allow unused imports in __init__.py
+"tests/*" = ["S101"] # Allow `assert` in tests
+
+[tool.black]
+line-length = 120
+target-version = ["py39"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | frontend/node_modules
+)/
+'''
+
+[tool.pytest.ini_options]
+# This is for running pytest from the root if needed,
+# but backend tests will typically be run from the backend directory.
+# addopts = "-ra --cov"
+# testpaths = ["backend/tests"] # Adjust if running from root
+# pythonpath = ['.', 'backend'] # Adjust if running from root
+filterwarnings = [
+    "ignore::DeprecationWarning"
+]
+
+# If you plan to have project-level scripts or package this root,
+# you might add a [project] section here. For now, it's mainly for tools.
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+# This minimal build-system is if the root itself was a package.
+# For now, the main package is `fastapi_build` inside `backend/`.
+
+[tool.docformatter]
+wrap_summaries = 120
+wrap_descriptions = 120

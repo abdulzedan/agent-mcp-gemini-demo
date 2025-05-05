@@ -1,0 +1,8 @@
+# code-agent-gemini/requirements-dev.txt
+ruff
+black
+pre-commit
+pytest
+pytest-cov
+python-dotenv
+# Add other project-wide dev tools if any
