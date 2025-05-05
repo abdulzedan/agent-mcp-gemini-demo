@@ -5,6 +5,8 @@ from contextlib import AsyncExitStack
 import json
 from google.adk.agents import LlmAgent, Agent, BaseAgent
 from google.adk.tools import google_search, agent_tool, function_tool
+
+# NOTE: Do some more research on agent_tool
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
 from google.adk.tools.tool_context import ToolContext
 from google.adk.sessions import InMemorySessionService
