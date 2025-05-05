@@ -1,52 +1,46 @@
-# code-agent-gemini/backend/fastapi_build/agents/youtube_processing_agents.py
 import asyncio
-import logging
 import os
+import logging
 from contextlib import AsyncExitStack
-
-from google.adk.agents import (
-    Agent,
-    BaseAgent,
-    LlmAgent,
-)  # Agent is an alias for LlmAgent
-from google.adk.runners import Runner  # For local ADK runs
-from google.adk.sessions import (
-    InMemorySessionService,
-)  # For local ADK runs if needed outside FastAPI
-from google.adk.tools import function_tool, google_search
+import json
+from google.adk.agents import LlmAgent, Agent, BaseAgent
+from google.adk.tools import google_search, agent_tool, function_tool
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
 from google.adk.tools.tool_context import ToolContext
+from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
 from google.genai import types as genai_types
-
-from fastapi_build.core.config import settings  # Your FastAPI app's settings
+import json
+from fastapi_build.core.config import settings
 
 # Configure logging
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
 logger = logging.getLogger(__name__)
 
 # --- Global services for ADK (can be initialized once) ---
-# These are used if you run agents directly with ADK Runner.
-# FastAPI will manage sessions differently if integrating ADK more deeply.
+# These are used if you run agents directly with ADK Runner...
+# FastAPI will manage sessions differently if integrating ADK more deeply, sooo ake a note of that
 adk_session_service = InMemorySessionService()
 
-# Common AsyncExitStack for managing MCP server lifecycles
+# Common AsyncExitStack for managing MCP server lifecycle
 common_exit_stack = AsyncExitStack()
 
 
-# --- Agent Definitions ---
+# --- Agent Definitions --_ #
 
 
 async def get_youtube_transcript_from_mcp(
     video_url: str, tool_context: ToolContext
 ) -> str:
-    """An ADK FunctionTool that uses MCPToolset to connect to our custom
+    """
+    An ADK function_tool that uses MCPToolset to connect to our custom
     YouTube Transcript MCP Server and fetch the transcript.
-    This function itself will be wrapped by FunctionTool and given to an ADK Agent.
+    This function itself will be wrapped by function_tool and given to an ADK Agent.
     """
     logger.info(f"ADK Tool: Attempting to get transcript for URL: {video_url} via MCP.")
 
     # Path to the MCP server script - ensure it's correct relative to where ADK runs
-    # This assumes the CWD is the `backend` directory when this is run by FastAPI/ADK
+    # This assumes the CWD is the `backend` directory when this is run by FastAPI/ADK... and we package the backend using pyproject.toml
     # or an absolute path is used.
     script_path = os.path.abspath(settings.YOUTUBE_MCP_SERVER_SCRIPT_PATH)
     if not os.path.exists(script_path):
@@ -87,16 +81,19 @@ async def get_youtube_transcript_from_mcp(
             f"Calling MCP tool '{youtube_transcript_mcp_tool.name}' with args: {{'video_url': '{video_url}'}}"
         )
         mcp_response_content = await youtube_transcript_mcp_tool.run_async(
-            args={"video_url": video_url},  # Arguments for the MCP tool
-            tool_context=tool_context,  # Pass the current ADK tool context
+            args={
+                "video_url": video_url
+            },  # Arguments for the MCP tool, i'll standarrize this later
+            tool_context=tool_context,
+            # we're gong to pas the ADK tool context to the MCP tool
         )
         # The MCP tool returns a list of content parts, we expect one TextContent part with JSON
         if isinstance(mcp_response_content, list) and len(mcp_response_content) > 0:
             if hasattr(mcp_response_content[0], "text"):
                 transcript_data_json = mcp_response_content[0].text
-                logger.info("Received transcript data (JSON string) from MCP server.")
-                # The MCP server already formats its output as a JSON string representing the dict
-                return transcript_data_json  # Return the JSON string as is
+                logger.info(f"Received transcript data (JSON string) from MCP server.")
+                # The MCP server already formats its output as a JSON string representing the
+                return transcript_data_json  # Return the JSON string as is..
             else:
                 logger.error(
                     f"Unexpected response part from MCP tool: {mcp_response_content[0]}"
@@ -114,7 +111,7 @@ async def get_youtube_transcript_from_mcp(
                 )
                 return mcp_response_content
             elif isinstance(mcp_response_content, dict):  # If it's a dict
-                logger.info("Received transcript data (dict) from MCP server.")
+                logger.info(f"Received transcript data (dict) from MCP server.")
                 return json.dumps(mcp_response_content)  # Convert dict to JSON string
             else:
                 logger.error(
@@ -135,9 +132,10 @@ async def get_youtube_transcript_from_mcp(
 
 
 # Wrap the function to be used as an ADK tool
-youtube_transcript_tool = FunctionTool(
+youtube_transcript_tool = function_tool(
     func=get_youtube_transcript_from_mcp,
     # The docstring of get_youtube_transcript_from_mcp will be used as description
+    ##NOTE : This is a bit of a hack, but it works for now.
 )
 
 summarizer_agent = LlmAgent(
@@ -158,12 +156,13 @@ summarizer_agent = LlmAgent(
 
 fact_checker_agent = LlmAgent(
     name="FactCheckerAgent",
-    model=settings.ADK_GEMINI_MODEL,  # Google Search tool is compatible with Gemini 2 models like "gemini-2.0-flash"
+    model=settings.ADK_GEMINI_MODEL,  # Google Search tool is compatible with Gemini 2 models like "gemini-2.0-flash"...
+    # before pushing to publish, NOTE:which models do support grounding search
     instruction="""You are a Fact-Checking Agent.
     You will be given a summary of a YouTube video and the original transcript (JSON string).
     Your tasks are:
     1. Identify key factual claims made in the summary.
-    2. Use the 'Google Search' tool to verify these claims.
+    2. Use the 'google_search' tool to verify these claims.
     3. For each claim, state whether it is 'Verified', 'False', or 'Unverified due to lack of information'.
     4. Provide the source URL(s) from your search that support your finding for each claim.
     5. If a claim is false, briefly explain why or provide the correct information.
@@ -187,7 +186,8 @@ fact_checker_agent = LlmAgent(
 # Orchestrator Agent
 # This will be the main agent invoked by FastAPI
 class YouTubeProcessingOrchestratorAgent(BaseAgent):  # Using BaseAgent for custom flow
-    """Orchestrates the process of fetching a YouTube transcript, summarizing it,
+    """
+    Orchestrates the process of fetching a YouTube transcript, summarizing it,
     and then fact-checking the summary.
     """
 
@@ -261,7 +261,7 @@ class YouTubeProcessingOrchestratorAgent(BaseAgent):  # Using BaseAgent for cust
             logger.info(
                 f"[{self.name}] Calling YouTube Transcript Tool for: {video_url}"
             )
-            # ADK FunctionTool.run_async expects keyword arguments
+            # ADK function_tool.run_async expects keyword arguments
             transcript_json_str_result_dict = (
                 await self._youtube_transcript_tool.run_async(
                     args={"video_url": video_url},  # Pass args as a dictionary
@@ -473,7 +473,7 @@ async def local_test_run():
 
     # youtube_video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ" # A video with transcript
     youtube_video_url = (
-        "https://www.youtube.com/watch?v=MWQ_sH2dG5U"  # Example: ADK intro
+        "https://www.youtube.com/watch?v=EIkeRBP5nDg"  # Example: ADK intro
     )
 
     logger.info(f"Local Test: Querying with URL: {youtube_video_url}")
@@ -516,7 +516,7 @@ async def local_test_run():
             ):
                 final_text_response = event.content.parts[0].text
 
-    logger.info("\n--- Local Test Final Combined Output ---")
+    logger.info(f"\n--- Local Test Final Combined Output ---")
     logger.info(final_text_response)
     logger.info("Local test run finished.")
 
