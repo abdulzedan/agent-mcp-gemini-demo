@@ -12,7 +12,7 @@ license = {text = "MIT License"}
 
 dependencies = [
     "fastapi>=0.115.12",
-    "uvicorn=0.34.2",
+    "uvicorn==0.34.2",
     "pydantic>=2.11.4",
     "python-dotenv>=1.1.0",
     "google-cloud-aiplatform[adk]>=1.40.0", # ADK and its dependencies,
