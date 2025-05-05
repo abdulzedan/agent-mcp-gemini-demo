@@ -4,7 +4,8 @@ import logging
 from contextlib import AsyncExitStack
 import json
 from google.adk.agents import LlmAgent, Agent, BaseAgent
-from google.adk.tools import google_search, agent_tool, function_tool
+from google.adk.tools import google_search, function_tool
+from pathlib import Path  # forgot to import Path
 
 # NOTE: Do some more research on agent_tool
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
@@ -14,6 +15,7 @@ from google.adk.runners import Runner
 from google.genai import types as genai_types
 import json
 from fastapi_build.core.config import settings
+from google.adk.events import Event as AdkEvent, EventActions
 
 # Configure logging
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
@@ -475,7 +477,7 @@ async def local_test_run():
 
     # youtube_video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ" # A video with transcript
     youtube_video_url = (
-        "https://www.youtube.com/watch?v=EIkeRBP5nDg"  # Example: ADK intro
+        "https://www.youtube.com/watch?v=dtY--67OSp8"  # Example: ADK intro
     )
 
     logger.info(f"Local Test: Querying with URL: {youtube_video_url}")
