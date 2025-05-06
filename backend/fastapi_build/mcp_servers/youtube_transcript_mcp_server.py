@@ -1,23 +1,21 @@
-# code-agent-gemini/backend/fastapi_build/mcp_servers/youtube_transcript_mcp_server.py
 import asyncio
 import json
 import logging
+from youtube_transcript_api import (
+    YouTubeTranscriptApi,
+    TranscriptsDisabled,
+    NoTranscriptFound,
+)
 
+# MCP Server Imports
+from mcp import types as mcp_types
+from mcp.server.lowlevel import Server, NotificationOptions
+from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 
 # ADK Tool Imports (for converting our function to MCP schema)
 from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.mcp_tool.conversion_utils import adk_to_mcp_tool_type
-
-# MCP Server Imports
-from mcp import types as mcp_types
-from mcp.server.lowlevel import NotificationOptions, Server
-from mcp.server.models import InitializationOptions
-from youtube_transcript_api import (
-    NoTranscriptFound,
-    TranscriptsDisabled,
-    YouTubeTranscriptApi,
-)
 
 # Configure logging for the MCP server
 logging.basicConfig(level=logging.INFO)  # Or load from env
@@ -26,19 +24,17 @@ logger = logging.getLogger("YouTubeTranscriptMCPServer")
 
 # --- Define the Core Tool Function ---
 def get_youtube_transcript_tool_func(video_url: str) -> dict:
-    """Fetches the transcript for a given YouTube video URL.
+    """
+    Fetches the transcript for a given YouTube video URL.
 
     Args:
-    ----
         video_url (str): The full URL of the YouTube video.
                          Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 
     Returns:
-    -------
         dict: A dictionary containing either the transcript segments or an error message.
               On success: {"status": "success", "transcript": [{"text": "...", "start": 0.0, "duration": 0.0}, ...]}
               On failure: {"status": "error", "message": "Error description"}
-
     """
     logger.info(f"Tool 'get_youtube_transcript_tool_func' called with URL: {video_url}")
     try:
@@ -157,7 +153,7 @@ if __name__ == "__main__":
         asyncio.run(run_mcp_server())
     except KeyboardInterrupt:
         logger.info("\nYouTube Transcript MCP Server stopped by user.")
-    except Exception:
+    except Exception as e:
         logger.exception("YouTube Transcript MCP Server encountered an unhandled error")
     finally:
         logger.info("YouTube Transcript MCP Server process exiting.")
