@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 YouTube fact-checking pipeline built with Google-ADK + LoopAgent.
 """
@@ -300,6 +299,12 @@ root_agent = SequentialAgent(
         fact_check_loop,
     ],
 )
+
+# Global Instances for FastAPI integration
+root_agent_instance = root_agent
+adk_session_service = InMemorySessionService()
+common_exit_stack = _common_exit_stack
+
 
 # ── 6 · Local test harness (optional) ──────────────────────────────────────────
 if __name__ == "__main__":  # pragma: no cover
