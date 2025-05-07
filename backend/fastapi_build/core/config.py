@@ -22,7 +22,7 @@ else:
 
 
 class Settings(BaseSettings):
-    GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "your-gcp-project-id")
+    GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "main-env-demo")
     GOOGLE_CLOUD_LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
     GOOGLE_GENAI_USE_VERTEXAI: bool = (
         os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "TRUE").lower() == "true"
