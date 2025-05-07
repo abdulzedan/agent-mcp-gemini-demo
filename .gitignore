@@ -7,6 +7,8 @@
 !/.env.example
 .venv/
 __pycache__/
+,ruff_cache/
+
 
 # IDEs and editors
 .vscode/
