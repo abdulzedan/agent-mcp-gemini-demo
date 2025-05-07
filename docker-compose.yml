@@ -1,0 +1,24 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: 3.11 # preferred if its over 3.11>
+    container_name: code-agent-gemini-backend
+    ports:
+      - "8000:8000" #Must double check if we need to open this though.... with adk web
+    volumes:
+      # But ensure your Dockerfile correctly installs dependencies first.
+      # For production, avoid mounting source code directly like this.
+      - ./backend:/app/backend # Mount local backend to /app/backend in container
+    env_file:
+      - .env # load from the root... use the .env.samples I ahave in the beginign
+    environment:
+      # You can also set or override environment variables here
+      - PORT=8000
+      # GOOGLE_API_KEY should be in your .env file and NOT committed to git
+    restart: unless-stopped
