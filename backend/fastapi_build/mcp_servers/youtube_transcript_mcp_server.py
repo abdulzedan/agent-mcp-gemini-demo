@@ -1,140 +1,117 @@
+# File: youtube_transcript_mcp_server.py
+
+#!/usr/bin/env python3
 import asyncio
 import json
 import logging
+import re
+from urllib.parse import urlparse, parse_qs
+
 from youtube_transcript_api import (
     YouTubeTranscriptApi,
     TranscriptsDisabled,
     NoTranscriptFound,
 )
-
-# MCP Server Imports
 from mcp import types as mcp_types
 from mcp.server.lowlevel import Server, NotificationOptions
 from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 
-# ADK Tool Imports (for converting our function to MCP schema)
 from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.mcp_tool.conversion_utils import adk_to_mcp_tool_type
 
-# Configure logging for the MCP server
-logging.basicConfig(level=logging.INFO)  # Or load from env
+# Logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("YouTubeTranscriptMCPServer")
 
 
-# --- Define the Core Tool Function ---
-def get_youtube_transcript_tool_func(video_url: str) -> dict:
+def get_youtube_transcript_tool_func(video_id_or_url: str) -> dict:
     """
-    Fetches the transcript for a given YouTube video URL.
-
-    Args:
-        video_url (str): The full URL of the YouTube video.
-                         Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-
-    Returns:
-        dict: A dictionary containing either the transcript segments or an error message.
-              On success: {"status": "success", "transcript": [{"text": "...", "start": 0.0, "duration": 0.0}, ...]}
-              On failure: {"status": "error", "message": "Error description"}
+    MCP Tool function to fetch a YouTube transcript.
+    Accepts either a raw 11-char video ID or a full URL.
     """
-    logger.info(f"Tool 'get_youtube_transcript_tool_func' called with URL: {video_url}")
+    logger.info(f"Fetching transcript for input: {video_id_or_url}")
+
+    # Determine video ID
+    vid = None
+    if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id_or_url):
+        vid = video_id_or_url
+    else:
+        # Try parsing URL
+        parsed = urlparse(video_id_or_url)
+        qs = parse_qs(parsed.query)
+        vids = qs.get("v", [])
+        if vids:
+            vid = vids[0]
+        else:
+            m = re.search(
+                r"(?:youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{11})", video_id_or_url
+            )
+            if m:
+                vid = m.group(1)
+
+    if not vid:
+        return {"status": "error", "message": "Could not parse video ID"}
+
     try:
-        if "v=" not in video_url:
-            video_id_parse_error = "Invalid YouTube URL: Missing 'v=' parameter."
-            logger.error(video_id_parse_error)
-            return {"status": "error", "message": video_id_parse_error}
-
-        video_id = video_url.split("v=")[1].split("&")[0]
-        if not video_id:
-            video_id_extract_error = "Could not extract video ID from URL."
-            logger.error(video_id_extract_error)
-            return {"status": "error", "message": video_id_extract_error}
-
-        logger.info(f"Extracted Video ID: {video_id}")
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-        logger.info(f"Successfully fetched transcript for video ID: {video_id}")
-        return {"status": "success", "transcript": transcript_list}
+        transcript = YouTubeTranscriptApi.get_transcript(vid)
+        return {"status": "success", "transcript": transcript}
     except TranscriptsDisabled:
-        error_msg = f"Transcripts are disabled for video: {video_url}"
-        logger.error(error_msg)
-        return {"status": "error", "message": error_msg}
+        return {"status": "error", "message": "Transcripts disabled."}
     except NoTranscriptFound:
-        error_msg = f"No transcript found for video: {video_url}"
-        logger.error(error_msg)
-        return {"status": "error", "message": error_msg}
+        return {"status": "error", "message": "No transcript found."}
     except Exception as e:
-        error_msg = f"An unexpected error occurred while fetching transcript for {video_url}: {str(e)}"
-        logger.exception(error_msg)  # Log full traceback
-        return {"status": "error", "message": error_msg}
+        logger.exception("Unexpected error fetching transcript")
+        return {"status": "error", "message": str(e)}
 
 
-# --- Prepare the ADK Tool (for schema conversion) ---
-logger.info("Initializing ADK FunctionTool for schema conversion...")
-adk_youtube_tool = FunctionTool(get_youtube_transcript_tool_func)
-logger.info(f"ADK tool '{adk_youtube_tool.name}' initialized for schema purposes.")
+def google_search_tool(query: str, num_results: int = 5) -> dict:
+    # stub/simulation – replace with your actual search integration
+    return {"status": "success", "query": query, "results": []}
 
-# --- MCP Server Setup ---
-logger.info("Creating MCP Server instance...")
+
+# ADK Tools (no 'name=' here)
+adk_youtube_tool = FunctionTool(func=get_youtube_transcript_tool_func)
+adk_search_tool = FunctionTool(func=google_search_tool)
+logger.info(f"Initialized MCP tools: {adk_youtube_tool.name}, {adk_search_tool.name}")
+
+# MCP Server
 mcp_app = Server("youtube-transcript-mcp-server")
 
 
 @mcp_app.list_tools()
 async def list_tools() -> list[mcp_types.Tool]:
-    """MCP handler to list available tools."""
-    logger.info("MCP Server: Received list_tools request.")
-    mcp_tool_schema = adk_to_mcp_tool_type(adk_youtube_tool)
-    logger.info(f"MCP Server: Advertising tool: {mcp_tool_schema.name}")
-    return [mcp_tool_schema]
+    logger.info("Listing MCP tools")
+    return [
+        adk_to_mcp_tool_type(adk_youtube_tool),
+        adk_to_mcp_tool_type(adk_search_tool),
+    ]
 
 
 @mcp_app.call_tool()
-async def call_tool(
-    name: str, arguments: dict
-) -> list[mcp_types.TextContent | mcp_types.ImageContent | mcp_types.EmbeddedResource]:
-    """MCP handler to execute a tool call."""
-    logger.info(
-        f"MCP Server: Received call_tool request for '{name}' with args: {arguments}"
-    )
-
+async def call_tool(name: str, arguments: dict):
+    logger.info(f"call_tool: {name}, args={arguments}")
     if name == adk_youtube_tool.name:
-        try:
-            # Execute the ADK tool's underlying function directly (or tool.run if it were async)
-            # Since get_youtube_transcript_tool_func is sync, we call it directly.
-            # If it were async, we would await tool.run_async(args=arguments, tool_context=None)
-            result_dict = get_youtube_transcript_tool_func(
-                **arguments
-            )  # Pass args correctly
-            logger.info(
-                f"MCP Server: Tool '{name}' executed. Result status: {result_dict.get('status')}"
-            )
-
-            response_text = json.dumps(result_dict, indent=2)
-            return [mcp_types.TextContent(type="text", text=response_text)]
-
-        except Exception as e:
-            logger.exception(f"MCP Server: Error executing tool '{name}'")
-            error_text = json.dumps(
-                {
-                    "status": "error",
-                    "message": f"Failed to execute tool '{name}': {str(e)}",
-                }
-            )
-            return [mcp_types.TextContent(type="text", text=error_text)]
-    else:
-        logger.warning(f"MCP Server: Tool '{name}' not found.")
-        error_text = json.dumps(
-            {"status": "error", "message": f"Tool '{name}' not implemented."}
+        resp = get_youtube_transcript_tool_func(arguments.get("video_id", ""))
+        return [mcp_types.TextContent(type="text", text=json.dumps(resp))]
+    if name == adk_search_tool.name:
+        q = arguments.get("query", "")
+        n = int(arguments.get("num_results", 5))
+        resp = google_search_tool(q, n)
+        return [mcp_types.TextContent(type="text", text=json.dumps(resp))]
+    return [
+        mcp_types.TextContent(
+            type="text",
+            text=json.dumps({"status": "error", "message": f"Unknown tool {name}"}),
         )
-        return [mcp_types.TextContent(type="text", text=error_text)]
+    ]
 
 
-# --- MCP Server Runner ---
 async def run_mcp_server():
-    """Runs the MCP server over standard input/output."""
-    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-        logger.info("MCP Server starting handshake...")
+    async with mcp.server.stdio.stdio_server() as (r, w):
         await mcp_app.run(
-            read_stream,
-            write_stream,
+            r,
+            w,
             InitializationOptions(
                 server_name=mcp_app.name,
                 server_version="0.1.0",
@@ -144,16 +121,15 @@ async def run_mcp_server():
                 ),
             ),
         )
-        logger.info("MCP Server run loop finished.")
 
 
 if __name__ == "__main__":
-    logger.info("Launching YouTube Transcript MCP Server...")
+    logger.info("Starting YouTube Transcript MCP Server...")
     try:
         asyncio.run(run_mcp_server())
     except KeyboardInterrupt:
-        logger.info("\nYouTube Transcript MCP Server stopped by user.")
-    except Exception as e:
-        logger.exception("YouTube Transcript MCP Server encountered an unhandled error")
+        logger.info("Stopped by user")
+    except Exception:
+        logger.exception("Unhandled error")
     finally:
-        logger.info("YouTube Transcript MCP Server process exiting.")
+        logger.info("Exiting MCP server")
