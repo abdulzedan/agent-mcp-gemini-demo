@@ -3,11 +3,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Ensure imports from your project work.
-# If running pytest from the 'backend' directory and fastapi_build is installable
-# (e.g. pip install -e .), this should work.
-# Otherwise, you might need to adjust PYTHONPATH.
 from fastapi_build.agents.youtube_processing_agents import (
     ClaimsOutput,
     CollectorAgent,
