@@ -30,8 +30,7 @@ jobs:
       - name: Lint with Ruff (matching pre-commit)
         run: |
           ruff check . \
-            --config ../pyproject.toml \
-            --select E,F,I,UP,A
+            --config ../pyproject.toml
 
       - name: Check formatting with Black
         run: black --check --verbose --config ../pyproject.toml .
