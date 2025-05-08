@@ -10,9 +10,7 @@ repos:
     rev: 25.1.0
     hooks:
     -   id: black
-        # Tell black to use the configuration from pyproject.toml in the backend folder.
         args: ['--config=backend/pyproject.toml']
-        # Only run on Python files in the backend folder.
         files: ^backend/.*\.py$
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
