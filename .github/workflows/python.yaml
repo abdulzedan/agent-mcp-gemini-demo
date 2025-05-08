@@ -1,4 +1,10 @@
 jobs:
+
+on:
+  push:
+    branches:
+      - main
+
   build:
     runs-on: ubuntu-latest
     defaults:
