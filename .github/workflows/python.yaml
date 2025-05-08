@@ -27,12 +27,12 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: Lint with Ruff
+      - name: Lint with Ruff (auto-fix)
         run: |
-          # Check critical issues
-          ruff check . --select=E9,F63,F7,F82 --config ../pyproject.toml
-          # Full linting
-          ruff check . --config ../pyproject.toml
+          ruff check . --fix --config ../pyproject.toml
+
+          # Fail the build if Ruff made changes
+          git diff --exit-code || (echo '❌ Ruff auto-fixed issues. Run `pre-commit run --all-files` and commit the changes.' && exit 1)
 
       - name: Check formatting with Black
         run: black --check --verbose --config ../pyproject.toml .
