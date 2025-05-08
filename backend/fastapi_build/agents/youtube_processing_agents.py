@@ -3,18 +3,16 @@ YouTube fact-checking pipeline built with Google-ADK + LoopAgent.
 """
 
 from __future__ import annotations
-
 import asyncio
 import json
 import logging
 import os
 import re
 import sys
-from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack
 from pathlib import Path
-
-import google.generativeai as genai  # type: ignore
+from fastapi_build.core.config import settings
+from pydantic import BaseModel, Field, RootModel
 from google.adk.agents import BaseAgent, LlmAgent, LoopAgent, SequentialAgent
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event as AdkEvent
@@ -26,9 +24,7 @@ from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
-from pydantic import BaseModel, Field, RootModel
-
-from fastapi_build.core.config import settings
+from collections.abc import AsyncGenerator
 
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
 logger = logging.getLogger(__name__)
@@ -37,6 +33,8 @@ logger = logging.getLogger(__name__)
 os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
 os.environ.pop("GOOGLE_CLOUD_LOCATION", None)
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "false")
+
+import google.generativeai as genai  # type: ignore  # noqa: E402
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
