@@ -43,9 +43,7 @@ def get_youtube_transcript_tool_func(video_id_or_url: str) -> dict:
         if vids:
             vid = vids[0]
         else:
-            m = re.search(
-                r"(?:youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{11})", video_id_or_url
-            )
+            m = re.search(r"(?:youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{11})", video_id_or_url)
             if m:
                 vid = m.group(1)
 

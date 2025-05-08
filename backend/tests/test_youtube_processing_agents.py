@@ -30,9 +30,7 @@ from google.genai import types as genai_types
 @pytest.fixture
 def mock_invocation_context():
     ctx = MagicMock()
-    ctx.user_content = genai_types.Content(
-        parts=[genai_types.Part(text="https://www.youtube.com/watch?v=dQw4w9WgXcQ")]
-    )
+    ctx.user_content = genai_types.Content(parts=[genai_types.Part(text="https://www.youtube.com/watch?v=dQw4w9WgXcQ")])
     ctx.invocation_id = "test_inv_id"
     ctx.session = MagicMock(spec=Session)
     ctx.session.state = {}
@@ -42,9 +40,7 @@ def mock_invocation_context():
 
 @pytest.fixture
 def mock_tool_context(mock_invocation_context):
-    return MagicMock(
-        invocation_context=mock_invocation_context, function_call_id="test_func_call_id"
-    )
+    return MagicMock(invocation_context=mock_invocation_context, function_call_id="test_func_call_id")
 
 
 def _assert_event_text_contains(event: AdkEvent, expected_text: str):
@@ -120,9 +116,7 @@ async def test_get_yt_transcript_mcp_error(mock_tool_context):
 
 @pytest.mark.asyncio
 async def test_get_yt_transcript_script_not_found(mock_tool_context):
-    with patch(
-        "fastapi_build.youtube_processing_agents.Path.exists", return_value=False
-    ):
+    with patch("fastapi_build.youtube_processing_agents.Path.exists", return_value=False):
         with pytest.raises(RuntimeError, match="MCP script not found"):
             await _get_yt_transcript("dQw4w9WgXcQ", mock_tool_context)
 
@@ -149,24 +143,16 @@ async def test_transcript_fetcher_agent_valid_url(mock_invocation_context):
         _assert_event_text_contains(event, "✅ Transcript fetched (2 segments)")
         assert event.turn_complete
         assert event.actions.state_delta["transcript"] == expected_transcript
-        assert (
-            mock_invocation_context.session.state["transcript"] == expected_transcript
-        )
-        mock_extract.assert_called_once_with(
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        )
+        assert mock_invocation_context.session.state["transcript"] == expected_transcript
+        mock_extract.assert_called_once_with("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
 
 @pytest.mark.asyncio
 async def test_transcript_fetcher_agent_invalid_url(mock_invocation_context):
     agent = TranscriptFetcherAgent(name="TestTranscriptFetcher")
-    mock_invocation_context.user_content = genai_types.Content(
-        parts=[genai_types.Part(text="invalid")]
-    )
+    mock_invocation_context.user_content = genai_types.Content(parts=[genai_types.Part(text="invalid")])
 
-    with patch(
-        "fastapi_build.youtube_processing_agents.extract_video_id", return_value=None
-    ) as mock_extract:
+    with patch("fastapi_build.youtube_processing_agents.extract_video_id", return_value=None) as mock_extract:
         events = [ev async for ev in agent._run_async_impl(mock_invocation_context)]
 
         assert len(events) == 1
@@ -209,10 +195,7 @@ def test_search_planner_agent_config():
     assert isinstance(search_planner_agent, LlmAgent)
     assert search_planner_agent.name == "SearchPlannerAgent"
     assert search_planner_agent.output_key == "pending_items"
-    assert (
-        "Return **only** a JSON array of {claim, query} objects."
-        in search_planner_agent.instruction
-    )
+    assert "Return **only** a JSON array of {claim, query} objects." in search_planner_agent.instruction
 
 
 @pytest.mark.asyncio
@@ -303,9 +286,7 @@ def test_pydantic_models_instantiation():
     assert len(claims_out.claims) == 2
 
     search_plan_item = SearchPlanItem(claim="c1", query="q1")
-    search_plan_output = SearchPlanOutput.model_validate(
-        [search_plan_item.model_dump()]
-    )
+    search_plan_output = SearchPlanOutput.model_validate([search_plan_item.model_dump()])
     assert len(search_plan_output.root) == 1
 
     verdict = Verdict(claim="c1", verdict="True", sources=["src1"])

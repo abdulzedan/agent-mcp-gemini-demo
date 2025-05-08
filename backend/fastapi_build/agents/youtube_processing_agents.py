@@ -63,20 +63,12 @@ async def _get_yt_transcript(video_id: str, tool_context: ToolContext) -> list[d
         raise RuntimeError(f"MCP script not found: {script}")
 
     mcp_tools, _ = await MCPToolset.from_server(
-        connection_params=StdioServerParameters(
-            command=sys.executable, args=["-u", str(script)]
-        ),
+        connection_params=StdioServerParameters(command=sys.executable, args=["-u", str(script)]),
         async_exit_stack=_common_exit_stack,
     )
-    raw = await mcp_tools[0].run_async(
-        args={"video_id": video_id}, tool_context=tool_context
-    )
+    raw = await mcp_tools[0].run_async(args={"video_id": video_id}, tool_context=tool_context)
 
-    payload = (
-        raw.content[0].text
-        if hasattr(raw, "content")
-        else getattr(raw, "text", str(raw))
-    )
+    payload = raw.content[0].text if hasattr(raw, "content") else getattr(raw, "text", str(raw))
     resp = json.loads(payload)
     if resp.get("status") != "success":
         raise RuntimeError(f"MCP error: {resp.get('message')}")
@@ -88,19 +80,13 @@ youtube_transcript_tool = FunctionTool(func=_get_yt_transcript)
 
 # ── 1 · Transcript fetcher ─────────────────────────────────────────────────────
 class TranscriptFetcherAgent(BaseAgent):
-    async def _run_async_impl(
-        self, ctx: InvocationContext
-    ) -> AsyncGenerator[AdkEvent, None]:
+    async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[AdkEvent, None]:
         vid = extract_video_id(ctx.user_content.parts[0].text.strip())
         if not vid:
             yield AdkEvent(
                 author=self.name,
                 invocation_id=ctx.invocation_id,
-                content=genai_types.Content(
-                    parts=[
-                        genai_types.Part(text="❌ Please provide a valid YouTube URL")
-                    ]
-                ),
+                content=genai_types.Content(parts=[genai_types.Part(text="❌ Please provide a valid YouTube URL")]),
                 turn_complete=True,
             )
             return
@@ -108,17 +94,13 @@ class TranscriptFetcherAgent(BaseAgent):
         try:
             transcript = await youtube_transcript_tool.run_async(
                 args={"video_id": vid},
-                tool_context=ToolContext(
-                    ctx, function_call_id=f"{ctx.invocation_id}-yt"
-                ),
+                tool_context=ToolContext(ctx, function_call_id=f"{ctx.invocation_id}-yt"),
             )
         except Exception as exc:
             yield AdkEvent(
                 author=self.name,
                 invocation_id=ctx.invocation_id,
-                content=genai_types.Content(
-                    parts=[genai_types.Part(text=f"❌ Transcript error: {exc}")]
-                ),
+                content=genai_types.Content(parts=[genai_types.Part(text=f"❌ Transcript error: {exc}")]),
                 turn_complete=True,
             )
             return
@@ -128,11 +110,7 @@ class TranscriptFetcherAgent(BaseAgent):
             author=self.name,
             invocation_id=ctx.invocation_id,
             content=genai_types.Content(
-                parts=[
-                    genai_types.Part(
-                        text=f"✅ Transcript fetched ({len(transcript)} segments)"
-                    )
-                ]
+                parts=[genai_types.Part(text=f"✅ Transcript fetched ({len(transcript)} segments)")]
             ),
             actions=EventActions(state_delta={"transcript": transcript}),
             turn_complete=True,
@@ -198,9 +176,7 @@ class DequeueAgent(BaseAgent):
             txt = raw.strip()
             if txt.startswith("```"):
                 # drop any Markdown fences
-                txt = "\n".join(
-                    line for line in txt.splitlines() if not re.match(r"\s*```", line)
-                )
+                txt = "\n".join(line for line in txt.splitlines() if not re.match(r"\s*```", line))
             try:
                 pending: list[dict] = json.loads(txt)
             except Exception:
@@ -226,12 +202,8 @@ class DequeueAgent(BaseAgent):
         yield AdkEvent(
             author=self.name,
             invocation_id=ctx.invocation_id,
-            content=genai_types.Content(
-                parts=[genai_types.Part(text=f"🔍 Checking: {current['claim']}")]
-            ),
-            actions=EventActions(
-                state_delta={"current_item": current, "pending_items": pending}
-            ),
+            content=genai_types.Content(parts=[genai_types.Part(text=f"🔍 Checking: {current['claim']}")]),
+            actions=EventActions(state_delta={"current_item": current, "pending_items": pending}),
             turn_complete=True,
         )
 
@@ -263,9 +235,7 @@ fact_checker_worker = LlmAgent(
 
 # 4c – Collector agent (no LLM, just acknowledgement to keep LoopAgent happy)
 class CollectorAgent(BaseAgent):
-    async def _run_async_impl(
-        self, ctx: InvocationContext
-    ) -> AsyncGenerator[AdkEvent, None]:
+    async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[AdkEvent, None]:
         # Just emit a no-op event; DequeueAgent already moved verdict
         yield AdkEvent(
             author=self.name,
@@ -316,9 +286,7 @@ if __name__ == "__main__":  # pragma: no cover
             async for ev in runner.run_async(
                 user_id=sess.user_id,
                 session_id=sess.id,
-                new_message=genai_types.Content(
-                    role="user", parts=[genai_types.Part(text=url)]
-                ),
+                new_message=genai_types.Content(role="user", parts=[genai_types.Part(text=url)]),
             ):
                 if ev.content and ev.content.parts:
                     print(ev.content.parts[0].text)

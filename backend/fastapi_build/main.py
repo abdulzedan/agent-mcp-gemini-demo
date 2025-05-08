@@ -82,9 +82,7 @@ adk_runner = Runner(
 @app.post("/process-video/", response_model=ProcessVideoResponse)
 async def process_video(request: ProcessVideoRequest = Body(...)):
     """Processes a YouTube video: fetches transcript, summarizes, and fact-checks."""
-    logger.info(
-        f"Received request to process video: {request.video_url} for user: {request.user_id}"
-    )
+    logger.info(f"Received request to process video: {request.video_url} for user: {request.user_id}")
 
     # Manage ADK session
     if request.session_id:
@@ -94,22 +92,14 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
             session_id=request.session_id,
         )
         if not session:
-            logger.warning(
-                f"Session ID {request.session_id} not found for user {request.user_id}. Creating new."
-            )
-            session = adk_session_service.create_session(
-                app_name=adk_runner.app_name, user_id=request.user_id
-            )
+            logger.warning(f"Session ID {request.session_id} not found for user {request.user_id}. Creating new.")
+            session = adk_session_service.create_session(app_name=adk_runner.app_name, user_id=request.user_id)
     else:
-        session = adk_session_service.create_session(
-            app_name=adk_runner.app_name, user_id=request.user_id
-        )
+        session = adk_session_service.create_session(app_name=adk_runner.app_name, user_id=request.user_id)
 
     logger.info(f"Using ADK Session ID: {session.id}")
 
-    query_content = genai_types.Content(
-        role="user", parts=[genai_types.Part(text=str(request.video_url))]
-    )
+    query_content = genai_types.Content(role="user", parts=[genai_types.Part(text=str(request.video_url))])
 
     final_combined_output = ""
     error_message = None
@@ -133,9 +123,7 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                     if part.text:
                         logger.debug(f"  Event Text: {part.text[:100]}...")
                     # Capture renderedContent for grounding from Google Search tool
-                    if (
-                        hasattr(part, "tool_code_output") and part.tool_code_output
-                    ):  # Old ADK versions
+                    if hasattr(part, "tool_code_output") and part.tool_code_output:  # Old ADK versions
                         # Look for renderedContent in tool_code_output if Google Search was used
                         # This part needs verification with latest ADK structure for Google Search grounding
                         pass
@@ -145,8 +133,7 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                                 if rendered_content_html is None:
                                     rendered_content_html = ""
                                 rendered_content_html += (
-                                    f"<p><a href='{gm_item.web.uri}' target='_blank'>"
-                                    f"{gm_item.web.title}</a></p>"
+                                    f"<p><a href='{gm_item.web.uri}' target='_blank'>" f"{gm_item.web.title}</a></p>"
                                 )
                             # The ADK docs state: (
                             #   "The UI code (HTML) is returned in the Gemini response as renderedContent"
@@ -155,15 +142,9 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                             # If event.content.parts[0].rendered_content exists, use that.
                             # This needs to be checked against an actual Gemini response with grounding.
                             # For now, constructing simple HTML from grounding_metadata.
-                    if (
-                        event.author == root_agent_instance.name
-                        and event.is_final_response()
-                        and part.text
-                    ):
+                    if event.author == root_agent_instance.name and event.is_final_response() and part.text:
                         final_combined_output = part.text
-                        logger.info(
-                            f"Final combined output from orchestrator: {final_combined_output[:200]}..."
-                        )
+                        logger.info(f"Final combined output from orchestrator: {final_combined_output[:200]}...")
                         # Try to parse summary and fact-check from the combined output
                         # This is a simple parsing strategy;
                         # a more robust way would be structured output from the agent.
@@ -171,12 +152,8 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                             "Video Summary:" in final_combined_output
                             and "Fact-Checking Report:" in final_combined_output
                         ):
-                            parts = final_combined_output.split(
-                                "Fact-Checking Report:", 1
-                            )
-                            summary_text = (
-                                parts[0].replace("Video Summary:", "").strip()
-                            )
+                            parts = final_combined_output.split("Fact-Checking Report:", 1)
+                            summary_text = parts[0].replace("Video Summary:", "").strip()
                             fact_check_text = parts[1].strip()
                         else:
                             summary_text = "Could not parse summary."
@@ -185,17 +162,11 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
             if event.actions and event.actions.state_delta:
                 logger.debug(f"  State Delta: {event.actions.state_delta}")
             if event.error_message:
-                logger.error(
-                    f"  ADK Event Error: Code={event.error_code}, Message={event.error_message}"
-                )
+                logger.error(f"  ADK Event Error: Code={event.error_code}, Message={event.error_message}")
                 # error_message = f"Agent error: {event.error_message}" # This might be too verbose
 
-        if (
-            not final_combined_output
-        ):  # If the agent didn't yield a final text response via orchestrator directly
-            last_state = adk_session_service.get_session(
-                adk_runner.app_name, request.user_id, session.id
-            ).state
+        if not final_combined_output:  # If the agent didn't yield a final text response via orchestrator directly
+            last_state = adk_session_service.get_session(adk_runner.app_name, request.user_id, session.id).state
             final_combined_output = (
                 f"Summary: {last_state.get('video_summary', 'N/A')}\n"
                 f"Fact-Check: {last_state.get('fact_check_report', 'N/A')}"
@@ -203,9 +174,7 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
             summary_text = last_state.get("video_summary")
             fact_check_text = last_state.get("fact_check_report")
             if not summary_text and not fact_check_text and not error_message:
-                error_message = (
-                    "Agent finished but no final output captured in expected format."
-                )
+                error_message = "Agent finished but no final output captured in expected format."
                 final_combined_output = error_message
 
     except Exception as e:
