@@ -5,13 +5,13 @@ on:
     branches:
       - main
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -27,14 +27,15 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: Lint with ruff
+      - name: Lint with Ruff
         run: |
-          ruff check . --select=E9,F63,F7,F82
-          ruff check .
+          # Check critical issues
+          ruff check . --select=E9,F63,F7,F82 --config ../pyproject.toml
+          # Full linting
+          ruff check . --config ../pyproject.toml
 
       - name: Check formatting with Black
-        working-directory: .
-        run: black --check --verbose --config=backend/pyproject.toml backend
+        run: black --check --verbose --config ../pyproject.toml .
 
       - name: Run unit tests
         run: pytest
