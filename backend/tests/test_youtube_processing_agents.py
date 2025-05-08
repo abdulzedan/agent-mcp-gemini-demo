@@ -1,4 +1,3 @@
-# backend/tests/test_youtube_processing_agents.py
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -14,11 +13,11 @@ from fastapi_build.agents.youtube_processing_agents import (
     WorkerOutput,
     _get_yt_transcript,
     claim_extractor_agent,
-    common_exit_stack,  # Assuming this is the AsyncExitStack
+    common_exit_stack,
     extract_video_id,
     fact_check_loop,
     fact_checker_worker,
-    root_agent,  # Testing the definition
+    root_agent,
     search_planner_agent,
 )
 from google.adk.agents import LlmAgent, LoopAgent, SequentialAgent
@@ -28,7 +27,6 @@ from google.adk.tools.mcp_tool.mcp_toolset import MCPTool, MCPToolset
 from google.genai import types as genai_types
 
 
-# --- Fixtures ---
 @pytest.fixture
 def mock_invocation_context():
     ctx = MagicMock()
@@ -38,7 +36,7 @@ def mock_invocation_context():
     ctx.invocation_id = "test_inv_id"
     ctx.session = MagicMock(spec=Session)
     ctx.session.state = {}
-    ctx.misc = {"async_exit_stack": common_exit_stack}  # For MCP tool
+    ctx.misc = {"async_exit_stack": common_exit_stack}
     return ctx
 
 
@@ -49,47 +47,28 @@ def mock_tool_context(mock_invocation_context):
     )
 
 
-# --- Test Helper Functions ---
 def _assert_event_text_contains(event: AdkEvent, expected_text: str):
     assert event.content and event.content.parts
     assert expected_text in event.content.parts[0].text
 
 
-# --- Tests for Helper Functions ---
 @pytest.mark.parametrize(
     "raw_input, expected_id",
     [
-        # Standard YouTube URLs
         ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "dQw4w9WgXcQ"),
         ("http://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=youtu.be", "dQw4w9WgXcQ"),
-        # Shortened URLs
         ("https://youtu.be/dQw4w9WgXcQ", "dQw4w9WgXcQ"),
         ("http://youtu.be/dQw4w9WgXcQ?t=5", "dQw4w9WgXcQ"),
-        # Shorts URLs
         ("https://www.youtube.com/shorts/abcdefghijk", "abcdefghijk"),
-        # Raw valid IDs
         ("dQw4w9WgXcQ", "dQw4w9WgXcQ"),
-        (
-            "valid__id__",
-            "valid__id__",
-        ),  # 11 chars, underscore is valid by the regex ^([A-Za-z0-9_-]{11})$...
-        # Corrected cases based on  function's behavior for the failed tests:
-        (
-            "invalid_url",
-            "invalid_url",
-        ),  #  ("invalid_url", None). Function returns "invalid_url" due to 11-char length and valid charset.
-        (
-            "https://www.example.com/watch?v=dQw4w9WgXcQ",
-            "dQw4w9WgXcQ",
-        ),  #  ("https://www.example.com/watch?v=dQw4w9WgXcQ", None). Function extracts due to "v=" pattern.
+        ("valid__id__", "valid__id__"),
+        ("invalid_url", "invalid_url"),
+        ("https://www.example.com/watch?v=dQw4w9WgXcQ", "dQw4w9WgXcQ"),
         ("https://www.example.com/somevideo", None),
         ("not a url at all", None),
-        ("dQw4w9WgXc", None),  # Too short for raw ID pattern
-        ("dQw4w9WgXcQ1", None),  # Too long for raw ID pattern
-        (
-            "https://www.example.com/watch?v=toolongid123",
-            "toolongid12",
-        ),  # ID part is too long here
+        ("dQw4w9WgXc", None),
+        ("dQw4w9WgXcQ1", None),
+        ("https://www.example.com/watch?v=toolongid123", "toolongid12"),
         ("", None),
     ],
 )
@@ -105,7 +84,7 @@ async def test_get_yt_transcript_success(mock_tool_context):
     )
 
     mock_mcp_toolset = MagicMock(spec=MCPToolset)
-    mock_mcp_toolset.__getitem__.return_value = mock_mcp_tool  # Allow mcp_tools[0]
+    mock_mcp_toolset.__getitem__.return_value = mock_mcp_tool
 
     with (
         patch(
@@ -146,9 +125,6 @@ async def test_get_yt_transcript_script_not_found(mock_tool_context):
     ):
         with pytest.raises(RuntimeError, match="MCP script not found"):
             await _get_yt_transcript("dQw4w9WgXcQ", mock_tool_context)
-
-
-# --- Tests for Agents ---
 
 
 @pytest.mark.asyncio
@@ -273,7 +249,7 @@ async def test_dequeue_agent_with_items(mock_invocation_context):
 async def test_dequeue_agent_json_string_items(mock_invocation_context):
     agent = DequeueAgent(name="TestDequeueAgent")
     item1 = {"claim": "Claim 1", "query": "Query 1"}
-    item_str = f"```json\n{json.dumps([item1])}\n```"  # Test with markdown fences
+    item_str = f"```json\n{json.dumps([item1])}\n```"
     mock_invocation_context.session.state["pending_items"] = item_str
 
     events = [ev async for ev in agent._run_async_impl(mock_invocation_context)]
@@ -281,17 +257,15 @@ async def test_dequeue_agent_json_string_items(mock_invocation_context):
     event = events[0]
     _assert_event_text_contains(event, f"🔍 Checking: {item1['claim']}")
     assert mock_invocation_context.session.state["current_item"] == item1
-    assert mock_invocation_context.session.state["pending_items"] == []  # It was parsed
+    assert mock_invocation_context.session.state["pending_items"] == []
 
 
 def test_fact_checker_worker_config():
-    # ... (other assertions for this test remain the same) For... testing
     assert isinstance(fact_checker_worker, LlmAgent)
     assert fact_checker_worker.name == "FactCheckerWorker"
     assert fact_checker_worker.output_key == "last_verdict"
-    # Corrected the casing for 'google_search'
     assert "Call google_search(query, num_results=5)" in fact_checker_worker.instruction
-    assert len(fact_checker_worker.tools) == 1  # Google Search
+    assert len(fact_checker_worker.tools) == 1
 
 
 @pytest.mark.asyncio
@@ -301,7 +275,7 @@ async def test_collector_agent(mock_invocation_context):
     assert len(events) == 1
     event = events[0]
     assert event.turn_complete
-    assert event.content is None  # No content emitted by collector
+    assert event.content is None
 
 
 def test_fact_check_loop_config():
@@ -309,7 +283,7 @@ def test_fact_check_loop_config():
     assert fact_check_loop.name == "FactCheckLoop"
     assert len(fact_check_loop.sub_agents) == 3
     assert isinstance(fact_check_loop.sub_agents[0], DequeueAgent)
-    assert isinstance(fact_check_loop.sub_agents[1], LlmAgent)  # FactCheckerWorker
+    assert isinstance(fact_check_loop.sub_agents[1], LlmAgent)
     assert isinstance(fact_check_loop.sub_agents[2], CollectorAgent)
     assert fact_check_loop.max_iterations == 20
 
@@ -319,12 +293,11 @@ def test_root_agent_config():
     assert root_agent.name == "YouTubeFactCheckerPipeline"
     assert len(root_agent.sub_agents) == 4
     assert isinstance(root_agent.sub_agents[0], TranscriptFetcherAgent)
-    assert isinstance(root_agent.sub_agents[1], LlmAgent)  # ClaimExtractor
-    assert isinstance(root_agent.sub_agents[2], LlmAgent)  # SearchPlanner
-    assert isinstance(root_agent.sub_agents[3], LoopAgent)  # FactCheckLoop
+    assert isinstance(root_agent.sub_agents[1], LlmAgent)
+    assert isinstance(root_agent.sub_agents[2], LlmAgent)
+    assert isinstance(root_agent.sub_agents[3], LoopAgent)
 
 
-# --- Pydantic Model Tests (simple instantiation) ---
 def test_pydantic_models_instantiation():
     claims_out = ClaimsOutput(claims=["claim1", "claim2"])
     assert len(claims_out.claims) == 2
