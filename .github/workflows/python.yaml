@@ -1,10 +1,12 @@
-jobs:
+name: Python CI
 
 on:
   push:
     branches:
       - main
 
+
+jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
@@ -27,13 +29,10 @@ on:
 
       - name: Lint with ruff
         run: |
-          # Check for severe issues first
           ruff check . --select=E9,F63,F7,F82
-          # Then run full linting (fail on any errors)
           ruff check .
 
       - name: Check formatting with Black
-        # Override working directory so that we can reference the correct config path
         working-directory: .
         run: black --check --verbose --config=backend/pyproject.toml backend
 
