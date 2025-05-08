@@ -9,9 +9,8 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-ignore = ["I001", "D203", "D213", "D100", "D104", "D107"]
+ignore = ["E402", "I001", "D203", "D213", "D100", "D104", "D107"]
 select = ["E", "F", "I", "UP", "A"]
-per-file-ignores = { "__init__.py" = ["F401"] }
 
 [tool.black]
 line-length = 120
