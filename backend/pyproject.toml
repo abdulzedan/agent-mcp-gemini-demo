@@ -20,6 +20,7 @@ dependencies = [
     "youtube-transcript-api>=1.0.3",
     "mcp>=1.7.0", # Model Context Protocol server library
     "httpx>=0.28.1", # For async HTTP requests if needed by agents/tools
+    "google-generativeai==0.8.5"
 ]
 
 
