@@ -144,8 +144,13 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                             if gm_item.web and gm_item.web.title and gm_item.web.uri:
                                 if rendered_content_html is None:
                                     rendered_content_html = ""
-                                rendered_content_html += f"<p><a href='{gm_item.web.uri}' target='_blank'>{gm_item.web.title}</a></p>"
-                            # The ADK docs state: "The UI code (HTML) is returned in the Gemini response as renderedContent"
+                                rendered_content_html += (
+                                    f"<p><a href='{gm_item.web.uri}' target='_blank'>"
+                                    f"{gm_item.web.title}</a></p>"
+                                )
+                            # The ADK docs state: (
+                            #   "The UI code (HTML) is returned in the Gemini response as renderedContent"
+                            # )
                             # This might be directly in a Part, or within grounding_metadata.
                             # If event.content.parts[0].rendered_content exists, use that.
                             # This needs to be checked against an actual Gemini response with grounding.
@@ -160,7 +165,8 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                             f"Final combined output from orchestrator: {final_combined_output[:200]}..."
                         )
                         # Try to parse summary and fact-check from the combined output
-                        # This is a simple parsing strategy; a more robust way would be structured output from the agent.
+                        # This is a simple parsing strategy;
+                        # a more robust way would be structured output from the agent.
                         if (
                             "Video Summary:" in final_combined_output
                             and "Fact-Checking Report:" in final_combined_output
@@ -190,7 +196,10 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
             last_state = adk_session_service.get_session(
                 adk_runner.app_name, request.user_id, session.id
             ).state
-            final_combined_output = f"Summary: {last_state.get('video_summary', 'N/A')}\nFact-Check: {last_state.get('fact_check_report', 'N/A')}"
+            final_combined_output = (
+                f"Summary: {last_state.get('video_summary', 'N/A')}\n"
+                f"Fact-Check: {last_state.get('fact_check_report', 'N/A')}"
+            )
             summary_text = last_state.get("video_summary")
             fact_check_text = last_state.get("fact_check_report")
             if not summary_text and not fact_check_text and not error_message:

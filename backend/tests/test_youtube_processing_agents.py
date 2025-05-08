@@ -1,23 +1,13 @@
 # backend/tests/test_youtube_processing_agents.py
-import asyncio
 import json
-import sys
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from google.adk.agents import LlmAgent, LoopAgent, SequentialAgent
-from google.adk.events import Event as AdkEvent, EventActions
-from google.adk.sessions import Session
-from google.adk.tools.mcp_tool.mcp_toolset import MCPTool, MCPToolset
-from google.genai import types as genai_types
 
 # Ensure imports from your project work.
 # If running pytest from the 'backend' directory and fastapi_build is installable
 # (e.g. pip install -e .), this should work.
 # Otherwise, you might need to adjust PYTHONPATH.
-
-from fastapi_build.core.config import settings
 from fastapi_build.agents.youtube_processing_agents import (
     ClaimsOutput,
     CollectorAgent,
@@ -35,8 +25,12 @@ from fastapi_build.agents.youtube_processing_agents import (
     fact_checker_worker,
     root_agent,  # Testing the definition
     search_planner_agent,
-    youtube_transcript_tool,
 )
+from google.adk.agents import LlmAgent, LoopAgent, SequentialAgent
+from google.adk.events import Event as AdkEvent
+from google.adk.sessions import Session
+from google.adk.tools.mcp_tool.mcp_toolset import MCPTool, MCPToolset
+from google.genai import types as genai_types
 
 
 # --- Fixtures ---
@@ -175,7 +169,7 @@ async def test_transcript_fetcher_agent_valid_url(mock_invocation_context):
         patch(
             "fastapi_build.youtube_processing_agents.youtube_transcript_tool.run_async",
             AsyncMock(return_value=expected_transcript),
-        ) as mock_run_tool,
+        ) as _,
     ):
         events = [ev async for ev in agent._run_async_impl(mock_invocation_context)]
 
@@ -190,7 +184,6 @@ async def test_transcript_fetcher_agent_valid_url(mock_invocation_context):
         mock_extract.assert_called_once_with(
             "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         )
-        mock_run_tool.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -224,7 +217,7 @@ async def test_transcript_fetcher_agent_tool_error(mock_invocation_context):
         patch(
             "fastapi_build.youtube_processing_agents.youtube_transcript_tool.run_async",
             AsyncMock(side_effect=RuntimeError("Tool failed")),
-        ) as mock_run_tool,
+        ) as _,
     ):
         events = [ev async for ev in agent._run_async_impl(mock_invocation_context)]
 

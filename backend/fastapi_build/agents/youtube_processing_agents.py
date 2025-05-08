@@ -10,26 +10,15 @@ import logging
 import os
 import re
 import sys
+from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack
 from pathlib import Path
-from typing import AsyncGenerator, List, Optional
 
-from pydantic import BaseModel, Field, RootModel
-
-# ── Environment ────────────────────────────────────────────────────────────────
-os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
-os.environ.pop("GOOGLE_CLOUD_LOCATION", None)
-os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "false")
-
-import google  # noqa: E402
 import google.generativeai as genai  # type: ignore
-
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
-# ── ADK core ───────────────────────────────────────────────────────────────────
 from google.adk.agents import BaseAgent, LlmAgent, LoopAgent, SequentialAgent
 from google.adk.agents.invocation_context import InvocationContext
-from google.adk.events import Event as AdkEvent, EventActions
+from google.adk.events import Event as AdkEvent
+from google.adk.events import EventActions
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService, Session
 from google.adk.tools import google_search
@@ -37,17 +26,25 @@ from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
+from pydantic import BaseModel, Field, RootModel
 
-# ── Project settings ───────────────────────────────────────────────────────────
 from fastapi_build.core.config import settings
 
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
 logger = logging.getLogger(__name__)
+
+# ── Environment ────────────────────────────────────────────────────────────────
+os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
+os.environ.pop("GOOGLE_CLOUD_LOCATION", None)
+os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "false")
+
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
 _common_exit_stack = AsyncExitStack()
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-def extract_video_id(raw: str) -> Optional[str]:
+def extract_video_id(raw: str) -> str | None:
     for pat in [
         r"(?:v=)([A-Za-z0-9_-]{11})",
         r"youtu\.be\/([A-Za-z0-9_-]{11})",
@@ -60,7 +57,7 @@ def extract_video_id(raw: str) -> Optional[str]:
 
 
 # ── MCP transcript-fetch tool ──────────────────────────────────────────────────
-async def _get_yt_transcript(video_id: str, tool_context: ToolContext) -> List[dict]:
+async def _get_yt_transcript(video_id: str, tool_context: ToolContext) -> list[dict]:
     script = Path(settings.YOUTUBE_MCP_SERVER_SCRIPT_PATH).expanduser()
     if not script.exists():
         raise RuntimeError(f"MCP script not found: {script}")
@@ -147,7 +144,7 @@ MAX_CLAIMS = 5
 
 
 class ClaimsOutput(BaseModel):
-    claims: List[str] = Field(..., max_items=MAX_CLAIMS)
+    claims: list[str] = Field(..., max_items=MAX_CLAIMS)
 
 
 claim_extractor_agent = LlmAgent(
@@ -170,7 +167,7 @@ class SearchPlanItem(BaseModel):
     query: str
 
 
-class SearchPlanOutput(RootModel[List[SearchPlanItem]]):
+class SearchPlanOutput(RootModel[list[SearchPlanItem]]):
     pass
 
 
@@ -202,10 +199,10 @@ class DequeueAgent(BaseAgent):
             if txt.startswith("```"):
                 # drop any Markdown fences
                 txt = "\n".join(
-                    l for l in txt.splitlines() if not re.match(r"\s*```", l)
+                    line for line in txt.splitlines() if not re.match(r"\s*```", line)
                 )
             try:
-                pending: List[dict] = json.loads(txt)
+                pending: list[dict] = json.loads(txt)
             except Exception:
                 pending = []
             # overwrite with parsed list so we don't do this again
@@ -243,10 +240,10 @@ class DequeueAgent(BaseAgent):
 class Verdict(BaseModel):
     claim: str
     verdict: str
-    sources: List[str | int]
+    sources: list[str | int]
 
 
-class WorkerOutput(RootModel[List[Verdict]]):
+class WorkerOutput(RootModel[list[Verdict]]):
     pass
 
 
