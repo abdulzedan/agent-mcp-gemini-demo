@@ -19,7 +19,7 @@ repos:
     rev: v0.1.0
     hooks:
     -   id: ruff
-        # Run Ruff in auto‑fix mode on all files (not just the staged ones)
-        args: ["--fix", "--config", "backend/pyproject.toml"]
-        #files: ^backend/.*\.py$
+        args: ["--fix", "--config", "pyproject.toml"]
+        # Force run on all files every time
+        always_run: true
         pass_filenames: false
