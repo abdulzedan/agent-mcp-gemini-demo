@@ -1,6 +1,6 @@
 # Code Agent Gemini - Demo
 
-This project is intended to showcase how to leverge the google-adk with a local MCP-server. We do this by attaching the [MCP server](backend/fastapi_build/mcp_servers/youtube_transcript_mcp_server.py) created to the the ADK adgent via [MCPToolSet](https://google.github.io/adk-docs/tools/mcp-tools/#mcptoolset-class).
+This project is intended to showcase how to leverge the google-adk with a local MCP-server. We do this by attaching the [MCP server](backend/fastapi_build/mcp_servers/youtube_transcript_mcp_server.py) created to the ADK adgent via [MCPToolSet](https://google.github.io/adk-docs/tools/mcp-tools/#mcptoolset-class).
 
 The agent pipeline uses [sequential agents](https://google.github.io/adk-docs/agents/workflow-agents/sequential-agents/) and [loop agents](https://google.github.io/adk-docs/agents/workflow-agents/loop-agents/) to ingest YouTube video (via its URL or ID) through a local MCP-server, extracts its transcripts, identifies factual claims against web search results and validates those claims using a built-in [google_search](https://google.github.io/adk-docs/tools/built-in-tools/).
 
@@ -10,7 +10,8 @@ It features a FastAPI backend that processes YouTube video URLs, extracts transc
 
 ## Demo
 
-[![Video_demo](./video/thumbnail.jpg)]([https://github.com/user-attachments/assets/d59b82e5-2ec1-40cf-a522-e8cbc57e7877](https://github.com/user-attachments/assets/26e6acc0-5e91-4f65-a671-0b7ebdf9604b))
+[![Video_demo](./video/thumbnail.jpg)](https://github.com/user-attachments/assets/26e6acc0-5e91-4f65-a671-0b7ebdf9604b)
+
 
 ## Overview of Agentic Capabilities:
 
