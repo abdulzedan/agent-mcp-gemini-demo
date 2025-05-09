@@ -1,4 +1,3 @@
-# code-agent-gemini/backend/fastapi_build/main.py
 import logging
 from contextlib import asynccontextmanager
 
@@ -8,12 +7,11 @@ from google.genai import types as genai_types
 from pydantic import BaseModel, HttpUrl
 
 from fastapi_build.agents.youtube_processing_agents import (
-    adk_session_service,  # Using a global ADK session service for this example
-    common_exit_stack,  # Manages MCP server lifecycle
+    adk_session_service,
+    common_exit_stack,  # Manages MCP server lifecycle..
     root_agent_instance,
 )
 
-# Import settings and agent-related components from our package
 from fastapi_build.core.config import settings
 
 # Configure logging
@@ -26,10 +24,8 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("FastAPI application startup...")
     # Initialize any resources on startup if needed
-    # For example, connect to databases, load models not part of ADK init
-
     # Ensure common_exit_stack is entered. This is critical if MCP servers
-    # are started via StdioServerParameters and managed by this stack.
+    # are started via StdioServerParameters and managed by this stack.. importnt for MCP servers
     await common_exit_stack.__aenter__()
     logger.info("AsyncExitStack for MCP tools entered.")
 
@@ -49,20 +45,22 @@ app = FastAPI(
 )
 
 
+# NOTE: Should probably separate these into their own modules, but can do that later
+
+
 # --- Pydantic Models for API ---
 class ProcessVideoRequest(BaseModel):
     video_url: HttpUrl  # FastAPI will validate if it's a URL
-    user_id: str = "default_user"  # Optional: to track user sessions
-    session_id: str | None = None  # Optional: to continue an existing session
+    user_id: str = "default_user"
+    session_id: str | None = None
 
 
 class ProcessVideoResponse(BaseModel):
     session_id: str
     summary: str | None = None
     fact_check_report: str | None = None
-    full_agent_output: str  # The combined output from the orchestrator
+    full_agent_output: str  #
     error: str | None = None
-    # Include a field for grounding information if applicable
     grounding_html_content: str | None = None
 
 
@@ -74,7 +72,7 @@ adk_runner = Runner(
     app_name="youtube_fact_checker_fastapi",
     session_service=adk_session_service,
     # artifact_service can be added here if your agents use artifacts
-    # artifact_service=InMemoryArtifactService(),
+    # artifact_service=InMemoryArtifactService(), #NOTE: not sure if I shjould include this, add more testing
 )
 
 
@@ -134,13 +132,7 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
                                     rendered_content_html = ""
                                 rendered_content_html += (
                                     f"<p><a href='{gm_item.web.uri}' target='_blank'>" f"{gm_item.web.title}</a></p>"
-                                )
-                            # The ADK docs state: (
-                            #   "The UI code (HTML) is returned in the Gemini response as renderedContent"
-                            # )
-                            # This might be directly in a Part, or within grounding_metadata.
-                            # If event.content.parts[0].rendered_content exists, use that.
-                            # This needs to be checked against an actual Gemini response with grounding.
+                                )  # This needs to be checked against an actual Gemini response with grounding.
                             # For now, constructing simple HTML from grounding_metadata.
                     if event.author == root_agent_instance.name and event.is_final_response() and part.text:
                         final_combined_output = part.text
@@ -182,7 +174,7 @@ async def process_video(request: ProcessVideoRequest = Body(...)):
         error_message = f"An unexpected error occurred: {str(e)}"
         # Ensure the exit stack is closed if an error occurs mid-processing within this request.
         # However, the lifespan manager should handle this more globally.
-        # await common_exit_stack.aclose() # This might be too aggressive here.
+        # await common_exit_stack.aclose() # This might be too aggressive hereee
 
     if error_message and not final_combined_output:
         final_combined_output = f"Error: {error_message}"
@@ -203,5 +195,5 @@ async def read_root():
 
 
 # To run this app (from the 'backend' directory):
+# the command so i don't forget
 # uvicorn fastapi_build.main:app --reload --port 8000
-# Ensure .env file is present in the 'backend' directory.

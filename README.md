@@ -14,10 +14,6 @@ It features a FastAPI backend that processes YouTube video URLs, extracts transc
 
 
 
-
-
-
-
 ## Overview of Agentic Capabilities:
 
 * **YouTube Video Processing**: Accepts a YouTube video URL
