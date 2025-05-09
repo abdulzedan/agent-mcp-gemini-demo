@@ -1,12 +1,16 @@
-# Code Agent Gemini - YouTube Fact-Checking Pipeline
+# Code Agent Gemini - Demo
 
 This project is intended to showcase how to leverge the google-adk with a local MCP-server. We do this by attaching the [MCP server](backend/fastapi_build/mcp_servers/youtube_transcript_mcp_server.py) created to the the ADK adgent via [MCPToolSet](https://google.github.io/adk-docs/tools/mcp-tools/#mcptoolset-class).
 
-The agent pipeline uses [sequential agents](https://google.github.io/adk-docs/agents/workflow-agents/sequential-agents/) and [loop agents](https://google.github.io/adk-docs/agents/workflow-agents/loop-agents/) to ingest YouTube video (via its URL or ID) through a local MCP-server, extracts its transcripts, identifies factual claims against web search results and validates those claims using a built-in [google_search](https://google.github.io/adk-docs/tools/built-in-tools/). 
+The agent pipeline uses [sequential agents](https://google.github.io/adk-docs/agents/workflow-agents/sequential-agents/) and [loop agents](https://google.github.io/adk-docs/agents/workflow-agents/loop-agents/) to ingest YouTube video (via its URL or ID) through a local MCP-server, extracts its transcripts, identifies factual claims against web search results and validates those claims using a built-in [google_search](https://google.github.io/adk-docs/tools/built-in-tools/).
 
 It features a FastAPI backend that processes YouTube video URLs, extracts transcripts, identifies factual claims, plans search queries, performs fact-checking using simulated Google Search, and presents a report.
 
 > **Note:**: While the FastAPI server can be used to service the agent endpoint, we are mainly going to leverge the build in `adk web` command
+
+
+## Demo
+[![Demo Video](video/thunbnail.png)](video/demo-video.mp4)
 
 
 ## Overview of Agentic Capabilities:
@@ -18,38 +22,60 @@ It features a FastAPI backend that processes YouTube video URLs, extracts transc
 * **Fact-Checking Loop**: An ADK LoopAgent iterates through claims
     * Dequeues a claim.
     * An LLM worker agent (simulates) uses google_search and determines if the claim is True, False, or Unverified
-    * Collects 'verdicts' 
+    * Collects 'verdicts'
 * **Sequential Orchestration**: All steps are managed by an ADK SequentialAgent
 * **FastAPI Backend**: Exposes an API endpoint to trigger the pipeline
 * **Dockerized**: Includes Dockerfile and docker-compose for containerized deployment
 * **Installable Backend Package**: The `fastapi_build` backend module is structured as an installable Python package
 
+
+
 ## Directory Structure
-
+```bash
 code-agent-gemini/
-├─ .devcontainer/            
-├─ .github/                 
-├─ backend/                
-│  ├─ fastapi_build/        
-│  │  ├─ core/              
-│  │  ├─ mcp_servers/      
-│  │  ├─ agents/            
-│  │        ─ youtube_processing_agents.py 
-│  │  ├─ agent.py           
-│  │  └─ main.py            
+├─ .devcontainer/
+│  └─ devcontainer.json
+├─ .github/
+│  └─ workflows/
+│     └─ python.yaml
+├─ backend/
+│  ├─ fastapi_build/
+│  │  ├─ agents/
+│  │  │  ├─ __init__.py
+│  │  │  └─ youtube_processing_agents.py
+│  │  ├─ core/
+│  │  │  ├─ __init__.py
+│  │  │  └─ config.py
+│  │  ├─ mcp_servers/
+│  │  │  ├─ __init__.py
+│  │  │  └─ youtube_transcript_mcp_server.py
+│  │  ├─ tools/
+│  │  │  └─ __init__.py
+│  │  ├─ __init__.py
+│  │  ├─ agent.py
+│  │  └─ main.py
+│  ├─ fastapi_build.egg-info/
 │  ├─ tests/
-            - test_youtube_processing_agents.py                 
-│  ├─ Dockerfile             
-│  ├─ pyproject.toml         
-│  ├─ requirements-dev.txt   
-│  └─ requirements.txt       
-├─ frontend/                
-├─ .env.example             
+│  │  ├─ __init__.py
+│  │  └─ test_youtube_processing_agents.py
+│  ├─ Dockerfile
+│  ├─ pyproject.toml
+│  ├─ README.md
+│  ├─ requirements-dev.txt
+│  └─ requirements.txt
+├─ frontend/
+├─ video/
+│  ├─ demo-video.mp4
+│  └─ thunbnail.png
+├─ .env.example
 ├─ .gitignore
-├─ .pre-commit-config.yaml  
-├─ docker-compose.yml       
-└─ README.md                
+├─ .pre-commit-config.yaml
+├─ docker-compose.yml
+├─ LICENSE.md
+├─ pyproject.toml
+└─ README.md
 
+```
 
 ## Prerequisites
 
@@ -117,10 +143,10 @@ code-agent-gemini/
     ```
     The adk web UI will load and will be available at `http://localhost:8000`.
 
-> **Note:**: When you open the adk web UI, you will need to select the "fastapi_build" on the agents 
+> **Note:**: When you open the adk web UI, you will need to select the "fastapi_build" on the agents
 
 2.  **MCP Server (`youtube_transcript_mcp_server.py`):**
-    This server is started on-demand by the `TranscriptFetcherAgent` using `StdioServerParameters`. You don't need to run it separately 
+    This server is started on-demand by the `TranscriptFetcherAgent` using `StdioServerParameters`. You don't need to run it separately
     For standalone testing of the MCP script:
     ```bash
     # From the backend directory
@@ -146,10 +172,10 @@ code-agent-gemini/
     docker-compose down
     ```
 
-## API Endpoints 
+## API Endpoints
 
 > **Note:**: This is if you are intending to run the FastAPI server. if that is the case,
-> please head to the OpenAPI through appending `/docs` to the `http://localhost:8000` 
+> please head to the OpenAPI through appending `/docs` to the `http://localhost:8000`
 
 * **`POST /process-video/`**:
     * Processes a YouTube video.
