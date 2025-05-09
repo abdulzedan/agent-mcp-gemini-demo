@@ -10,7 +10,13 @@ It features a FastAPI backend that processes YouTube video URLs, extracts transc
 
 ## Demo
 
-[![Video_demo](./video/thumbnail.jpg)]([https://github.com/user-attachments/assets/d59b82e5-2ec1-40cf-a522-e8cbc57e7877](https://github.com/user-attachments/assets/26e6acc0-5e91-4f65-a671-0b7ebdf9604b))
+[![Video_demo](./video/thumbnail.jpg)](https://github.com/user-attachments/assets/71c41979-af5f-48d9-81f4-70d032820f78)
+
+
+
+
+
+
 
 ## Overview of Agentic Capabilities:
 
