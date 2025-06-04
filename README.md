@@ -9,9 +9,9 @@ It features a FastAPI backend that processes YouTube video URLs, extracts transc
 > **Note:**: While the FastAPI server can be used to service the agent endpoint, we are mainly going to leverge the build in `adk web` command
 
 ## Demo
+This video demonstrates a conversation with an agent that is connected to the inventory and customer service agent. 
 
-[![Video_demo](./video/thumbnail.jpg)](https://github.com/user-attachments/assets/3b6aa41c-ac59-4943-9c60-c37696510f07)
-
+[![Video_demo](./video/thumbnail.jpg)](https://github.com/user-attachments/assets/a86f0880-1654-40f3-b5ee-c523a1f71a98)
 
 
 ## Overview of Agentic Capabilities:
