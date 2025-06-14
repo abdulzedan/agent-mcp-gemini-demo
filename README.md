@@ -11,13 +11,16 @@ It features a FastAPI backend that processes YouTube video URLs, extracts transc
 ## Demo
 This video demonstrates a conversation with an agent that is connected to the inventory and customer service agent. 
 
-[![Video_demo](./video/thumbnail.jpg)](https://github.com/user-attachments/assets/a86f0880-1654-40f3-b5ee-c523a1f71a98)
+[![Video_demo](./video/thumbnail.jpg)](https://github.com/user-attachments/assets/c84a8533-995b-4bee-9bf5-f1db54564f65)
+
+
+
 
 
 ## Overview of Agentic Capabilities:
 
 * **YouTube Video Processing**: Accepts a YouTube video URL
-* **Transcript Fetching**: Retrieves video transcripts using an [MCP (Multi-Capability Protocol)](https://cloud.google.com/blog/products/ai-machine-learning/mcp-toolbox-for-databases-now-supports-model-context-protocol) server powered by `youtube_transcript_api`
+* **Transcript Fetching**: Retrieves video transcripts using an [MCP (Model Context Protocol)](https://cloud.google.com/blog/products/ai-machine-learning/mcp-toolbox-for-databases-now-supports-model-context-protocol) server powered by `youtube_transcript_api`
 * **Claim Extraction**: Uses a Gemini-powered LLM Agent to identify key factual claims from the transcript
 * **Search Planning**: Another LLM Agent devises Google Search queries for each claim
 * **Fact-Checking Loop**: An ADK LoopAgent iterates through claims
